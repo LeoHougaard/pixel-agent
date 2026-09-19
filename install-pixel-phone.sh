@@ -46,8 +46,8 @@ cp "$SOURCE_DIR/pixel-t3-mobile.sh" "$BIN_DIR/pixel-t3-mobile"
 chmod 700 "$BIN_DIR/pixel-phone-bridge" "$BIN_DIR/pixel-t3-mobile"
 
 echo "Setting up the Debian guest (T3 + OpenCode, no desktop)..."
-proot-distro login debian --shared-tmp -- \
-  /bin/bash "$SOURCE_DIR/pixel-phone-guest-setup.sh"
+proot-distro login debian --shared-tmp --bind "$SOURCE_DIR:/run/pixel-setup" -- \
+  /bin/bash /run/pixel-setup/pixel-phone-guest-setup.sh
 
 cat > "$SHORTCUT_DIR/T3 Code Mobile" <<EOF
 #!/data/data/com.termux/files/usr/bin/bash

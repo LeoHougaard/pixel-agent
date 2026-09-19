@@ -46,3 +46,15 @@ Shizuku is unavailable.
 
 Unplugged battery endurance still requires measurement. Other Android devices
 and a complete installation on a second, empty phone are not yet tested.
+
+## 1.1.1 follow-up
+
+Closing Termux could reveal the launcher behind it and restart services during
+idle cleanup. The launcher now leaves the task stack when backgrounded, while
+preserving its chat route and draft storage. File pickers retain their activity.
+The exact failure case was tested with Termux in front: idle shutdown returned
+to the home screen, left no agent/Linux services, and kept wireless debugging
+off. Neither Termux's Wi-Fi lock nor the ADB multicast lock remained.
+
+The installers now bind their source folder explicitly into Debian, so cloning
+in Termux's private home works as well as using shared Android storage.

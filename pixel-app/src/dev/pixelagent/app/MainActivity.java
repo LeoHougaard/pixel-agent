@@ -307,7 +307,15 @@ public class MainActivity extends Activity {
     @Override public void onUserInteraction(){super.onUserInteraction();interactionPending=true;}
     @Override public void onResume(){super.onResume();foreground=true;interactionPending=true;checkOnResume=true;desiredRunning=true;transportOkay=true;if(web!=null){web.resumeTimers();web.onResume();}handler.postDelayed(tick,1000);}
     @Override public void onPause(){saveRoute();foreground=false;handler.removeCallbacks(tick);if(web!=null)web.onPause();super.onPause();}
-    @Override public void onStop(){if(web!=null){clearChat();CookieManager.getInstance().flush();web.pauseTimers();}super.onStop();}
+    @Override public void onStop(){
+        if(web!=null&&fileChoice==null){
+            clearChat();CookieManager.getInstance().flush();web.pauseTimers();
+            // Do not sit behind Termux in the task stack: closing Termux at
+            // idle would otherwise resume this activity and start it again.
+            if(checkSelfPermission(PERMISSION)==PackageManager.PERMISSION_GRANTED)finishAndRemoveTask();
+        }
+        super.onStop();
+    }
     @Override public void onDestroy(){foreground=false;handler.removeCallbacksAndMessages(null);for(PendingIntent p:pending.values())p.cancel();pending.clear();if(web!=null)web.destroy();super.onDestroy();}
     @Override public void onBackPressed(){
         WebBackForwardList history=web.copyBackForwardList();int previous=history.getCurrentIndex()-1;

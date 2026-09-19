@@ -43,8 +43,8 @@ cp "$SOURCE_DIR/pixel-desktop-doctor.sh" "$BIN_DIR/pixel-desktop-doctor"
 cp "$SOURCE_DIR/pixel-t3-mobile.sh" "$BIN_DIR/pixel-t3-mobile"
 chmod 700 "$BIN_DIR/pixel-desktop" "$BIN_DIR/pixel-desktop-stop" "$BIN_DIR/pixel-desktop-doctor" "$BIN_DIR/pixel-t3-mobile"
 
-proot-distro login debian --shared-tmp -- \
-  /bin/bash "$SOURCE_DIR/pixel-desktop-guest-setup.sh"
+proot-distro login debian --shared-tmp --bind "$SOURCE_DIR:/run/pixel-setup" -- \
+  /bin/bash /run/pixel-setup/pixel-desktop-guest-setup.sh
 bash "$SOURCE_DIR/pixel-desktop-ui.sh"
 
 cat > "$SHORTCUT_DIR/Pixel Desktop" <<EOF

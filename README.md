@@ -98,6 +98,8 @@ Shutdown stops managed services, kills the Termux ADB daemon, releases its
 wake lock, and, when Shizuku is available, force-stops Termux, Termux:API and
 Termux:X11. This closes other Termux sessions too. It never clears app data.
 The background chat page is unloaded so it cannot keep polling.
+The launcher also leaves Android's recent-task stack when backgrounded, so
+closing Termux cannot uncover it and accidentally start services again.
 Without Shizuku, it closes Linux services and invokes Termux's own Stop action.
 With Shizuku, wireless debugging is disabled during sleep to release its Wi-Fi
 multicast lock, then restored to its previous setting on startup. Normal Wi-Fi
