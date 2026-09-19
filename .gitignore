@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.downloads/
+pixel-app/.signing/
+.env
+.env.*
+*.key
+*.pem
+*.token
+*.log

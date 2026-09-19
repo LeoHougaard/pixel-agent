@@ -1,0 +1,40 @@
+<resources>
+    <style name="PixelTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:colorAccent">#B8C7E8</item>
+        <item name="android:alertDialogTheme">@style/PixelDialog</item>
+    </style>
+    <style name="PixelDialog" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/dialog_background</item>
+        <item name="android:windowMinWidthMajor">85%</item>
+        <item name="android:windowMinWidthMinor">90%</item>
+        <item name="android:backgroundDimAmount">0.5</item>
+        <item name="android:colorBackground">#171717</item>
+        <item name="android:colorAccent">#B8C7E8</item>
+        <item name="android:colorControlNormal">#929292</item>
+        <item name="android:colorControlHighlight">#18FFFFFF</item>
+        <item name="android:textColorPrimary">#E6E6E6</item>
+        <item name="android:textColorSecondary">#A1A1A1</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textAppearanceListItem">@style/PixelDialogText</item>
+        <item name="android:textAppearanceListItemSmall">@style/PixelDialogText</item>
+        <item name="android:windowTitleStyle">@style/PixelDialogTitle</item>
+        <item name="android:buttonBarButtonStyle">@style/PixelDialogButton</item>
+    </style>
+    <style name="PixelDialogText" parent="android:style/TextAppearance.Material.Body1">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">#E6E6E6</item>
+    </style>
+    <style name="PixelDialogTitle" parent="android:style/TextAppearance.Material.Title">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">#E6E6E6</item>
+    </style>
+    <style name="PixelDialogButton" parent="android:style/Widget.Material.Button.Borderless">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#B8C7E8</item>
+    </style>
+</resources>
