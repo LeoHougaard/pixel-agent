@@ -56,6 +56,11 @@ install -d /usr/local/lib/pixel-agent
 install -m 644 "$1/pixel-t3-watch.mjs" /usr/local/lib/pixel-agent/pixel-t3-watch.mjs
 install -m 755 "$1/pixel-t3-server.sh" /usr/local/bin/pixel-t3-server
 install -m 644 "$1/pixel-desktop-control.py" /usr/local/lib/pixel-agent/pixel-desktop-control.py
+install -m 644 "$1/pixel-desktop-activity.py" /usr/local/lib/pixel-agent/pixel-desktop-activity.py
+install -m 644 "$1/pixel-desktop-navigation.py" /usr/local/lib/pixel-agent/pixel-desktop-navigation.py
+if command -v xfce4-session >/dev/null; then
+  install -m 755 "$1/pixel-desktop-session.sh" /usr/local/bin/pixel-desktop-session
+fi
 install -m 644 "$1/pixel-projects.py" /usr/local/lib/pixel-agent/pixel-projects.py
 install -m 644 "$1/pixel-project-register.mjs" /usr/local/lib/pixel-agent/pixel-project-register.mjs
 install -m 644 "$1/pixel-checkpoint.py" /usr/local/lib/pixel-agent/pixel-checkpoint.py

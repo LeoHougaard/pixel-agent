@@ -63,6 +63,10 @@ included in the repository or APK. Sign in with your own accounts.
 After a reboot, unlock Android once and start Shizuku again through
 **menu > Settings > Phone control**. Android may require wireless re-pairing.
 
+To update an existing installation, install the new APK, then use
+**menu > Repair > Repair files** to install its bundled runtime changes.
+Projects, accounts and existing AGENTS.md are preserved.
+
 ## Use
 
 The normal screen is T3 chat, a connection status, and one menu. Startup shows
@@ -72,6 +76,10 @@ matching dark colors, rounded corners, and system sans-serif text.
 **GitHub projects** lists repositories for the account signed in through `gh`.
 Selecting one clones it or fetches origin, registers it in T3, and opens a draft.
 It preserves existing branches and uncommitted work. Send your task in chat.
+
+**Linux desktop** starts the desktop and opens it when ready. Use the return
+arrow at the top of its left panel to return to chat.
+Linux apps stay open. Android navigation remains visible as another way out.
 
 **Stop agent** works independently of the chat connection. **Reconnect chat**
 re-pairs the view. **Repair** can restart services, restore bundled control
@@ -86,7 +94,10 @@ The model receives environment instructions from
 
 Choose the idle interval in **menu > Settings**. Five minutes is the default.
 Actual input resets the countdown; an untouched visible chat does not.
+Desktop mouse and keyboard input also resets it, even while chat is closed.
 An active task is allowed to finish, then the full idle interval begins.
+If the desktop input monitor fails, automatic sleep pauses to protect work.
+**Status** reports this condition; **Stop agent** remains available.
 
 Before idle shutdown, the runtime backs up T3 and OpenCode SQLite databases
 using SQLite's backup API. Backups stay in Debian at
@@ -127,8 +138,10 @@ features, hardware acceleration or x86 binaries may not work.
 
 ## Build and verification
 
-`python Build-PixelApp.py` builds and signs the APK using the Android SDK and
-Android Studio JDK on Windows. Output: `.downloads/Pixel-Agent.apk`. Keep the
+`python Build-PixelApp.py` builds and signs the APK on Windows or Debian ARM64,
+including on the phone. See [maintenance instructions](docs/MAINTENANCE.md)
+for Linux build tools, runtime updates and agent access.
+Output: `.downloads/Pixel-Agent.apk`. Keep the
 ignored `pixel-app/.signing` directory for future updates. `--debug` enables
 WebView inspection; release builds disable it. `PIXEL_APPLICATION_ID` can be
 set when maintaining a private installation with a different package ID.

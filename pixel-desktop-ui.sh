@@ -5,7 +5,7 @@ mkdir -p "$state_dir"
 if [ ! -f "$state_dir/x11-preferences-before-ui.txt" ]; then
   termux-x11-preference list > "$state_dir/x11-preferences-before-ui.txt"
 fi
-termux-x11-preference 'forceOrientation:landscape' 'fullscreen:true' \
+termux-x11-preference 'forceOrientation:landscape' 'fullscreen:false' \
   'showAdditionalKbd:true' 'additionalKbdVisible:true' \
   'displayResolutionMode:custom' 'displayResolutionCustom:1280x720' \
   'displayStretch:false' 'displayFilteringMode:bilinear' \

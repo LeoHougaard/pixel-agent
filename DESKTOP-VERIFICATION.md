@@ -58,3 +58,25 @@ off. Neither Termux's Wi-Fi lock nor the ADB multicast lock remained.
 
 The installers now bind their source folder explicitly into Debian, so cloning
 in Termux's private home works as well as using shared Android storage.
+
+## 1.2 desktop access
+
+- The app's Linux desktop menu starts XFCE, waits for the window manager, and
+  opens Termux:X11. Reopening an existing desktop preserves its windows.
+- The panel's return arrow returns to the existing chat.
+  Android navigation remains visible. Returning does not stop Linux apps.
+- With a two-minute test interval and no agent task running, Android mouse and
+  keyboard input kept the desktop alive for 163 seconds. After input stopped,
+  the full idle interval elapsed before shutdown closed Termux, XFCE and its
+  Linux services. A saved desktop file survived the subsequent startup.
+- Repeated clicks at the same coordinates no longer wait for nonexistent
+  pointer movement. Desktop tools typed and saved multiline Unicode text.
+- The app built and signed inside Debian ARM64 on the phone, using Platform 34
+  and Debian's native build tools. The Android shell bridge installed that APK
+  from `/data/local/tmp`; the package's update time confirmed installation.
+- OpenCode tool registration and the approved environment instructions were
+  checked without sending a model prompt. The old private checkout was preserved.
+- Forty Python tests and three Node policy tests passed. Tests cover desktop
+  input, a lost input monitor, and the full wait after task completion.
+
+These checks used a shorter idle setting; normal use remains five minutes.

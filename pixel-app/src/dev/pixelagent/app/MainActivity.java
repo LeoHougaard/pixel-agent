@@ -46,6 +46,8 @@ public class MainActivity extends Activity {
     private boolean interactionPending=true;
     private boolean workspaceTools;
     private boolean projectPending;
+    private boolean desktopPending, desktopRequested;
+    private long desktopSince;
     private String projectStage="", pendingProjectTitle;
 
     @Override public void onCreate(Bundle saved) {
@@ -94,13 +96,31 @@ public class MainActivity extends Activity {
     }
     private void openMenu() {
         boolean off=phase.equals("stopped");
-        choose("Agent",new String[]{off?"Start":"Stop agent","Reconnect chat","Status","GitHub projects",workspaceTools?"Hide workspace tools":"Workspace tools","Settings","Repair"},n->{
+        choose("Agent",new String[]{off?"Start":"Stop agent","Reconnect chat","Status","GitHub projects","Linux desktop",workspaceTools?"Hide workspace tools":"Workspace tools","Settings","Repair"},n->{
             if(n==0) { if(off) startAgent(); else stopAgent(); }
             if(n==1) reconnect(); if(n==2) showStatus();
             if(n==3){projectPending=true;projectStage="Loading GitHub repositories";operationSince=SystemClock.elapsedRealtime();updateUi();send("projects",new String[]{"projects"});}
-            if(n==4){workspaceTools=!workspaceTools;styleChat();}
-            if(n==5) settings(); if(n==6) repairMenu();
+            if(n==4) openDesktop();
+            if(n==5){workspaceTools=!workspaceTools;styleChat();}
+            if(n==6) settings(); if(n==7) repairMenu();
         });
+    }
+    private void openDesktop() {
+        if(getPackageManager().getLaunchIntentForPackage("com.termux.x11")==null){
+            desktopError("Install Termux:X11 and run install-linux-desktop.sh in your source checkout.");return;
+        }
+        if(!desiredRunning||phase.equals("stopped")||phase.equals("error"))startAgent();
+        desktopPending=true;desktopRequested=false;desktopSince=SystemClock.elapsedRealtime();operationSince=desktopSince;
+        requestDesktop();updateUi();
+    }
+    private void requestDesktop() {
+        if(desktopPending&&!desktopRequested&&phase.equals("ready")){
+            desktopRequested=true;send("desktop",new String[]{"desktop"});
+        }
+    }
+    private void desktopError(String message) {
+        desktopPending=false;desktopRequested=false;updateUi();
+        new AlertDialog.Builder(this).setTitle("Linux desktop").setMessage(message).setPositiveButton("Done",null).show();
     }
     private void settings() {
         choose("Settings",new String[]{"Sleep after "+idleMinutes+" idle minutes","Phone control","Agent access","T3 settings"},n->{
@@ -139,6 +159,7 @@ public class MainActivity extends Activity {
     private void begin() {
         generation++; desiredRunning=true; autoConnect=true; transportOkay=true; pairPending=false;
         projectPending=false;pendingProjectTitle=null;
+        desktopPending=false;desktopRequested=false;
         failure=""; phase="starting"; stage="Starting Termux"; operationSince=SystemClock.elapsedRealtime(); heartbeatAt=0;
     }
     private void startAgent() { begin(); clearChat(); updateUi(); send("start",new String[]{"start"}); }
@@ -146,12 +167,14 @@ public class MainActivity extends Activity {
     private void stopAgent() {
         generation++; desiredRunning=false; pairPending=false; failure=""; clearChat(); phase="stopping"; stage="Stopping tasks";
         projectPending=false;pendingProjectTitle=null;
+        desktopPending=false;desktopRequested=false;
         operationSince=SystemClock.elapsedRealtime(); updateUi(); send("stop",new String[]{"stop"});
     }
     private void fail(String text) { failure=text; autoConnect=false; chatRequested=false; updateUi(); }
     private String displayStage() {
         if(!failure.isEmpty()) return failure;
         if(projectPending)return projectStage;
+        if(desktopPending)return desktopRequested?"Starting Linux desktop":"Waiting for agent services";
         if(phase.equals("ready") && desiredRunning && !chatLoaded) return pairPending?"Pairing chat":chatRequested?"Opening chat":"Connecting chat";
         return stage;
     }
@@ -167,7 +190,7 @@ public class MainActivity extends Activity {
     private void updateUi() {
         if(stageText==null) return;
         boolean failed=!failure.isEmpty() || phase.equals("error"), off=phase.equals("stopped");
-        boolean usable=chatLoaded && !failed && !projectPending && phase.equals("ready");
+        boolean usable=chatLoaded && !failed && !projectPending && !desktopPending && phase.equals("ready");
         boolean stale=!transportOkay || (lastReply>0 && SystemClock.elapsedRealtime()-lastReply>15000)
             || (heartbeatAt>0 && System.currentTimeMillis()/1000d-heartbeatAt>20 && !off);
         statusText.setText(failed?"Connection issue":stale?"Waiting for update":usable?(busy?"Working":"Connected"):off?"Sleeping":phase.equals("stopping")?"Stopping":"Connecting");
@@ -257,13 +280,18 @@ public class MainActivity extends Activity {
         handler.postDelayed(()->{
             PendingIntent waiting=pending.remove(id); if(waiting==null) return; waiting.cancel(); if(action.equals("status")) statusPending=false;
             if(sentGeneration!=generation) return; transportOkay=false; if(action.equals("pair")) pairPending=false; fail("Termux has not replied");
-        },action.equals("project")?610000:action.equals("projects")?70000:action.equals("repair")?180000:action.equals("pair")?100000:(action.equals("restart")||action.equals("start"))?60000:20000);
+        },action.equals("project")?610000:action.equals("projects")?70000:action.equals("repair")?180000:action.equals("pair")?100000:(action.equals("restart")||action.equals("start")||action.equals("desktop"))?60000:20000);
     }
     private void result(Intent intent) {
         int id=intent.getIntExtra("id",0); if(pending.remove(id)==null)return; String action=intent.getStringExtra("action"); if(action.equals("status"))statusPending=false;
         if(intent.getIntExtra("generation",0)!=generation)return; Bundle bundle=intent.getBundleExtra("result"); if(bundle==null)return; if(action.equals("pair"))pairPending=false;
         try {
             JSONObject data=new JSONObject(bundle.getString("stdout","").trim()); transportOkay=true; lastReply=SystemClock.elapsedRealtime();
+            if(action.equals("desktop")){
+                if(!data.optBoolean("desktop_starting"))desktopError(data.optString("message","Desktop could not start."));
+                return;
+            }
+            if(action.equals("desktop-view"))return;
             if(action.equals("projects")||action.equals("project")){
                 projectPending=false;
                 if(data.has("error")){fail(data.optString("error"));return;}
@@ -290,6 +318,13 @@ public class MainActivity extends Activity {
             if(projectPending&&data.has("project_job")){JSONObject job=data.getJSONObject("project_job");projectStage=job.optString("stage",projectStage);heartbeatAt=job.optDouble("updated_at",heartbeatAt);}
             stage=data.optString("stage",phase.equals("starting")?"Starting T3":phase.equals("ready")?"Connected":phase.equals("stopping")?"Stopping tasks":"Sleeping");
             if(phase.equals("error")){failure=data.optString("message","Service failed");autoConnect=false;chatRequested=false;}
+            if(desktopPending){
+                requestDesktop();JSONObject desktop=data.optJSONObject("desktop");
+                if(desktopRequested&&desktop!=null&&desktop.optBoolean("ready")){
+                    desktopPending=false;desktopRequested=false;updateUi();openPackage("com.termux.x11");
+                    send("desktop-view",new String[]{"desktop-view"});return;
+                }
+            }
             if(action.equals("settings"))Toast.makeText(this,"Saved",Toast.LENGTH_SHORT).show();
             if(phase.equals("ready")&&desiredRunning&&autoConnect&&!projectPending&&!chatRequested&&!pairPending)pair();
             if(phase.equals("stopped")){chatLoaded=false;chatRequested=false;} updateUi();
@@ -301,6 +336,7 @@ public class MainActivity extends Activity {
     }
     private final Runnable tick=new Runnable(){public void run(){
         if(!foreground)return;long now=SystemClock.elapsedRealtime();
+        if(desktopPending&&now-desktopSince>600000)desktopError("Desktop startup timed out. Use Repair > Restart services, then try again.");
         if(transportOkay&&(checkOnResume||!phase.equals("stopped"))&&now-lastStatusPoll>=4000){lastStatusPoll=now;send("status",interactionPending?new String[]{"status","active"}:new String[]{"status"});interactionPending=false;}
         if(now-lastWebCheck>=1000){lastWebCheck=now;checkWeb();} updateUi(); handler.postDelayed(this,1000);
     }};

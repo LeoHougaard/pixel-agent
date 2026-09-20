@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+import urllib.error
 
 spec = importlib.util.spec_from_file_location('runtime', Path(__file__).with_name('pixel-t3-runtime.py'))
 runtime = importlib.util.module_from_spec(spec)
@@ -41,6 +42,7 @@ def status():
                   heartbeat_age=round(age), version=2)
     job=read_json('project-job.json')
     if job:result['project_job']=job
+    result['desktop'] = runtime.desktop_activity()
     return result
 
 
@@ -182,6 +184,23 @@ def main(args):
         return status()
     if command == 'diagnostics':
         return diagnostics()
+    if command == 'desktop-view':
+        return {'ok': runtime.command('termux-x11-preference', 'fullscreen:false')}
+    if command == 'desktop':
+        if not running() or not runtime.service_ready():
+            raise RuntimeError('Wait for the agent to connect before opening the desktop.')
+        (STATE / 'use').touch()
+        token = (Path.home() / '.config/pixel-agent/bridge-token').read_text().strip()
+        request = urllib.request.Request('http://127.0.0.1:18080/desktop/start', data=b'{}',
+            headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
+        try:
+            with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=45) as response:
+                result = json.load(response)
+        except urllib.error.HTTPError as error:
+            result = json.load(error)
+        if result.get('error'):
+            raise RuntimeError(result['error'])
+        return {'desktop_starting': True}
     if command in ('projects','project'):
         action=['list'] if command=='projects' else ['open',args[1]]
         result=subprocess.run(['proot-distro','login','debian','--user','pixel','--shared-tmp',

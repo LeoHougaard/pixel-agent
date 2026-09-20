@@ -214,6 +214,21 @@ class Bridge:
 
     def desktop(self, action, body=None):
         import fcntl
+        if action in ('show', 'hide'):
+            if action == 'show':
+                component = 'com.termux.x11/com.termux.x11.MainActivity'
+            else:
+                app_id = (CONFIG_DIR / 'app-id').read_text().strip()
+                if not re.fullmatch(r'[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+', app_id):
+                    raise ValueError('Invalid Pixel Agent app ID')
+                component = app_id + '/.MainActivity'
+            result = self.run('am start -n ' + component, privileged=self.refresh() in ('rish', 'adb'))
+            if result['exit_code']:
+                raise RuntimeError(result['stderr'] or 'Android could not open the app')
+            if action == 'show':
+                self.run("termux-x11-preference 'fullscreen:false' </dev/null", privileged=False)
+            (Path.home() / '.local/state/pixel-t3/use').touch()
+            return {'ok': True}
         folder = Path.home()/'.local/state/pixel-desktop'
         folder.mkdir(parents=True, exist_ok=True)
         with self._desktop_lock:
@@ -238,6 +253,12 @@ class Bridge:
                     self.desktop_apps = [p for p in self.desktop_apps if p.poll() is None]+[app]
                     return {'pid':app.pid,'hint':'Check desktop status and a screenshot to verify the window opened.'}
                 if action == 'start' and not running:
+                    check = subprocess.run(['proot-distro', 'login', 'debian', '--user', 'pixel', '--',
+                        'sh', '-c', 'command -v xfce4-session >/dev/null'],
+                        capture_output=True, timeout=30, env=child_env())
+                    if check.returncode or not shutil.which('termux-x11'):
+                        raise RuntimeError('Linux desktop is not installed. Run bash install-linux-desktop.sh in the Termux source checkout.')
+                    (Path(os.environ.get('TMPDIR', '/data/data/com.termux/files/usr/tmp')) / 'pixel-desktop-activity.json').unlink(missing_ok=True)
                     fcntl.flock(lock, fcntl.LOCK_UN)
                     env = child_env(); env['PIXEL_DESKTOP_MANAGED'] = '1'
                     with (folder/'session.log').open('a') as log:
@@ -245,7 +266,7 @@ class Bridge:
                             str(Path.home()/'.local/bin/pixel-desktop'),'--session'], env=env,
                             stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
                     return {'running': True, 'state': 'starting', 'managed': True,
-                            'hint': 'Wait for pixel_desktop_status to report ready before GUI actions.'}
+                            'hint': 'Wait for pixel_desktop status to report ready before GUI actions.'}
                 if action == 'stop':
                     if self.desktop_process is None or self.desktop_process.poll() is not None:
                         return {'running': running, 'stopped': False, 'reason': 'This desktop was not started by the agent.'}
@@ -364,7 +385,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json({"error": "unauthorized"}, 401)
         body = self._body()
         try:
-            if self.path in ('/desktop/start', '/desktop/stop', '/desktop/launch'):
+            if self.path in ('/desktop/start', '/desktop/stop', '/desktop/launch', '/desktop/show', '/desktop/hide'):
                 return self._send_json(BRIDGE.desktop(self.path.rsplit('/', 1)[1], body))
             if self.path == "/run":
                 cmd = str(body.get("command", ""))

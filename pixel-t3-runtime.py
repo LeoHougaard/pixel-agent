@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -144,12 +145,39 @@ def latest_activity():
     return {}
 
 
-def idle_elapsed(sample, last_use, now, wall_time, idle_seconds=IDLE_SECONDS):
+def desktop_activity():
+    lock_path = Path.home() / '.local/state/pixel-desktop/session.lock'
+    if not lock_path.exists():
+        return {'running': False}
+    import fcntl
+    with lock_path.open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return {'running': False}
+        except BlockingIOError:
+            pass
+    try:
+        path = Path(os.environ.get('TMPDIR', '/data/data/com.termux/files/usr/tmp')) / 'pixel-desktop-activity.json'
+        data = json.loads(path.read_text())
+        valid = (0 <= time.time() - data['time'] < 15
+                 and math.isfinite(data['idle_seconds']) and data['idle_seconds'] >= 0)
+        return {**data, 'running': True, 'monitor_ok': valid, 'ready': valid and data.get('ready') is True}
+    except (OSError, ValueError, TypeError, KeyError):
+        return {'running': True, 'monitor_ok': False, 'ready': False}
+
+
+def idle_elapsed(sample, last_use, now, wall_time, idle_seconds=IDLE_SECONDS, desktop=None):
     # Unknown/stale state cannot prove that it is safe to stop a task.
     known = sample.get('ok') is True and 0 <= wall_time - sample.get('time', 0) < 60
     # A visible chat is not user activity. Only input or actual work resets this.
     if not known or sample.get('busy') is not False:
         return now, False
+    if desktop and desktop.get('running'):
+        # Never close desktop work if its input clock cannot be checked.
+        if not desktop.get('monitor_ok') or not desktop.get('ready'):
+            return now, False
+        since_input = max(0, wall_time - desktop['time'] + desktop['idle_seconds'])
+        last_use = max(last_use, now - since_input)
     return last_use, now - last_use >= idle_seconds
 
 
@@ -341,7 +369,8 @@ def serve():
                             touch_time, last_use = touched, now
                     except OSError:
                         pass
-                    last_use, idle = idle_elapsed(sample, last_use, now, time.time(), idle_minutes() * 60)
+                    desktop = desktop_activity()
+                    last_use, idle = idle_elapsed(sample, last_use, now, time.time(), idle_minutes() * 60, desktop)
                     if idle:
                         report('saving', 'Saving session')
                         checkpoint_ok = checkpoint()
@@ -353,7 +382,9 @@ def serve():
                             changed = (STATE / 'use').stat().st_mtime_ns != touch_time
                         except OSError:
                             changed = False
-                        if changed or fresh.get('busy') is not False or provider_work(server.pid):
+                        last_use, still_idle = idle_elapsed(fresh, last_use, time.monotonic(), time.time(),
+                                                            idle_minutes() * 60, desktop_activity())
+                        if changed or not still_idle or provider_work(server.pid):
                             last_use = time.monotonic()
                             report('ready', 'Connected', busy=fresh.get('busy', False))
                             continue
@@ -374,6 +405,9 @@ def serve():
                         'Checking connection' if sync is not None and sync.poll() == 0 else current_stage)
                     if ready and not known:
                         stage = 'Retrying status connection'
+                    desktop = desktop_activity()
+                    if ready and desktop.get('running') and not desktop.get('monitor_ok'):
+                        stage = 'Desktop input monitor unavailable; sleep paused'
                     report('ready' if ready else 'starting', stage,
                            busy=sample.get('busy', False), monitor_ok=known)
                 time.sleep(1)

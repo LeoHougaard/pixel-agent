@@ -1,8 +1,8 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.pixelagent.app" android:versionCode="5" android:versionName="1.1.1">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.pixelagent.app" android:versionCode="6" android:versionName="1.2.0">
     <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="35" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
-    <queries><package android:name="com.termux"/><package android:name="moe.shizuku.privileged.api"/></queries>
+    <queries><package android:name="com.termux"/><package android:name="com.termux.x11"/><package android:name="moe.shizuku.privileged.api"/></queries>
     <application android:label="Pixel Agent" android:icon="@drawable/icon" android:theme="@style/PixelTheme"
         android:allowBackup="false" android:networkSecurityConfig="@xml/network_security_config">
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTask" android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustResize">

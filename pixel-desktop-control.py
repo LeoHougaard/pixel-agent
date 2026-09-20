@@ -33,10 +33,8 @@ def point(data, width, height, x='x', y='y'):
 
 def main(data):
     action = data['action']
-    if action in ('start','stop'):
+    if action in ('start','stop','show','hide'):
         return bridge('/desktop/'+action, {})
-    if action == 'show':
-        return bridge('/run', {'command':'am start -n com.termux.x11/com.termux.x11.MainActivity', 'privileged':False})
     try:
         width,height = map(int,run('xdotool','getdisplaygeometry',timeout=4).split())
     except (RuntimeError,subprocess.TimeoutExpired):
@@ -60,7 +58,8 @@ def main(data):
         return bridge('/desktop/launch', {'command':command,'cwd':os.getcwd()})
     if action in ('click','move','drag','scroll'):
         x,y=point(data,width,height)
-        run('xdotool','mousemove','--sync',x,y)
+        # --sync waits for movement and hangs if the pointer is already here.
+        run('xdotool','mousemove',x,y)
         if action == 'click':
             run('xdotool','click','--repeat',str(max(1,min(2,int(data.get('clicks',1))))),str(max(1,min(3,int(data.get('button',1))))))
         if action == 'scroll':
@@ -70,7 +69,7 @@ def main(data):
         if action == 'drag':
             x2,y2=point(data,width,height,'end_x','end_y')
             run('xdotool','mousedown','1')
-            try: run('xdotool','mousemove','--sync',x2,y2)
+            try: run('xdotool','mousemove',x2,y2)
             finally: run('xdotool','mouseup','1')
     elif action == 'key':
         run('xdotool','key','--clearmodifiers',data['key'])

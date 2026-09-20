@@ -36,6 +36,33 @@ class IdleTest(unittest.TestCase):
         self.assertEqual((1200, False), runtime.idle_elapsed(idle, last_use, 1499, 1000))
         self.assertEqual((1200, True), runtime.idle_elapsed(idle, last_use, 1500, 1000))
 
+    def test_desktop_input_resets_sleep_even_when_chat_is_idle(self):
+        chat = {'ok': True, 'busy': False, 'time': 1000}
+        desktop = {'running': True, 'monitor_ok': True, 'ready': True,
+                   'time': 998, 'idle_seconds': 3}
+        last_use, asleep = runtime.idle_elapsed(chat, 0, 800, 1000, desktop=desktop)
+        self.assertEqual(795, last_use)
+        self.assertFalse(asleep)
+        # Later samples of an untouched desktop do not keep postponing sleep.
+        quiet = {**desktop, 'time': 1295, 'idle_seconds': 300}
+        chat['time'] = 1295
+        self.assertEqual((795, True), runtime.idle_elapsed(chat, last_use, 1095, 1295, desktop=quiet))
+
+    def test_lost_desktop_monitor_never_closes_unknown_work(self):
+        chat = {'ok': True, 'busy': False, 'time': 1000}
+        for desktop in ({'running': True}, {'running': True, 'monitor_ok': False}):
+            self.assertEqual((800, False), runtime.idle_elapsed(chat, 0, 800, 1000, desktop=desktop))
+        self.assertEqual((0, True), runtime.idle_elapsed(chat, 0, 800, 1000, desktop={'running': False}))
+
+    def test_finished_agent_task_gets_full_time_with_quiet_desktop(self):
+        desktop = {'running': True, 'monitor_ok': True, 'ready': True,
+                   'time': 1000, 'idle_seconds': 800}
+        chat = {'ok': True, 'busy': True, 'time': 1000}
+        last_use, _ = runtime.idle_elapsed(chat, 0, 1000, 1000, desktop=desktop)
+        chat.update(busy=False, time=1299)
+        desktop.update(time=1299, idle_seconds=1099)
+        self.assertEqual((1000, False), runtime.idle_elapsed(chat, last_use, 1299, 1299, desktop=desktop))
+
 
 class StopTest(unittest.TestCase):
     def setUp(self):

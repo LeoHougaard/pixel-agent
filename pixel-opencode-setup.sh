@@ -31,6 +31,8 @@ cp "$SOURCE_DIR/pixel-opencode/tools/pixel_screenshot.ts" "$GUEST_HOME/.config/o
 cp "$SOURCE_DIR/pixel-opencode/tools/pixel_desktop.ts" "$GUEST_HOME/.config/opencode/tools/pixel_desktop.ts"
 install -d /usr/local/lib/pixel-agent
 install -m 644 "$SOURCE_DIR/pixel-desktop-control.py" /usr/local/lib/pixel-agent/pixel-desktop-control.py
+install -m 644 "$SOURCE_DIR/pixel-desktop-activity.py" /usr/local/lib/pixel-agent/pixel-desktop-activity.py
+install -m 644 "$SOURCE_DIR/pixel-desktop-navigation.py" /usr/local/lib/pixel-agent/pixel-desktop-navigation.py
 if [ ! -f "$GUEST_HOME/.config/opencode/AGENTS.md" ]; then
   cp "$SOURCE_DIR/pixel-opencode/AGENTS.md" "$GUEST_HOME/.config/opencode/AGENTS.md"
 fi

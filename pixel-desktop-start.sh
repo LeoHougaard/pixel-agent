@@ -5,6 +5,8 @@ STATE_DIR="$HOME/.local/state/pixel-desktop"
 LOG_FILE="$STATE_DIR/session.log"
 DISPLAY_NUMBER=1
 mkdir -p "$STATE_DIR"
+# Keep Android's navigation available even if a Linux app is full screen.
+termux-x11-preference 'fullscreen:false' </dev/null >/dev/null 2>&1 || true
 
 # Termux's am wrapper supplies the app identity required by Android. The
 # /system/bin/am command claims to be com.android.shell and is rejected.
@@ -13,6 +15,7 @@ if [ "${1:-}" != "--session" ]; then
   nohup flock --nonblock --close "$STATE_DIR/session.lock" "$0" --session \
     </dev/null >>"$LOG_FILE" 2>&1 &
   am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity
+  termux-x11-preference 'fullscreen:false' </dev/null >/dev/null 2>&1 || true
   exit 0
 fi
 

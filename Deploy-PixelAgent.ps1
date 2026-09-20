@@ -47,6 +47,8 @@ $Files = @(
     "pixel-t3-runtime.py",
     "pixel-app-control.py",
     "pixel-desktop-control.py",
+    "pixel-desktop-activity.py",
+    "pixel-desktop-navigation.py",
     "pixel-checkpoint.py",
     "pixel-projects.py",
     "pixel-project-register.mjs",

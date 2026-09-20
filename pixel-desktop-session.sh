@@ -16,4 +16,9 @@ if [ ! -e "$HOME/.config/pixel-desktop-style-v2" ]; then
   pixel-desktop-style
   touch "$HOME/.config/pixel-desktop-style-v2"
 fi
-exec xfce4-session
+# This process stays inside the desktop tree, so shutdown also closes the monitor.
+python3 /usr/local/lib/pixel-agent/pixel-desktop-activity.py &
+monitor=$!
+trap 'kill "$monitor" 2>/dev/null || true' EXIT
+python3 /usr/local/lib/pixel-agent/pixel-desktop-navigation.py
+xfce4-session
